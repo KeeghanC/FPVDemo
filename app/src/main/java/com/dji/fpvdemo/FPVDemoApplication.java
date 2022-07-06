@@ -153,7 +153,6 @@ public class FPVDemoApplication extends Application{
             Toast.makeText(getApplicationContext(), "Permissions not accepted", Toast.LENGTH_LONG).show();
         }
     }
-
     private void notifyStatusChange() {
         mHandler.removeCallbacks(updateRunnable);
         mHandler.postDelayed(updateRunnable, 500);
