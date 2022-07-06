@@ -1,11 +1,14 @@
 package com.dji.fpvdemo;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.TextureView;
 import android.view.View;
@@ -14,6 +17,17 @@ import android.widget.CompoundButton;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
+
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.mlkit.vision.barcode.BarcodeScanner;
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
+import com.google.mlkit.vision.barcode.BarcodeScanning;
+import com.google.mlkit.vision.barcode.common.Barcode;
+import com.google.mlkit.vision.common.InputImage;
+
+import java.util.List;
 
 import dji.common.product.Model;
 import dji.sdk.base.BaseProduct;
@@ -80,10 +94,39 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
     public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
     }
 
+    /*
+     * Magical processing point for video streaming during the view update (video streaming)
+     *
+     * @param surface
+     */
     @Override
     public void onSurfaceTextureUpdated(SurfaceTexture surface) {
-    }
+        mCaptureBtn.setText("Keeghan");
 
+        Bitmap videoCaptureBitmap = mVideoSurface.getBitmap(); //get bitmap to look for barcode
+
+        BarcodeScanner barcodeScanner = BarcodeScanning.getClient(new BarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS).build());
+        InputImage image = InputImage.fromBitmap(videoCaptureBitmap, 0); //image to query for barcode
+
+        //Task to process the image to look for a barcode
+        Task<List<Barcode>> task = barcodeScanner.process(image);
+        task.addOnSuccessListener(new OnSuccessListener<List<Barcode>>() {
+            @Override
+            public void onSuccess(List<Barcode> barcodes) {
+                for (int i = 0; i < barcodes.size(); i++){
+                    String stringBarcode = barcodes.get(i).getRawValue();
+                    mCaptureBtn.setText(stringBarcode);
+                    Toast.makeText(MainActivity.this, stringBarcode, Toast.LENGTH_SHORT).show();
+                    SystemClock.sleep(1000);
+                }
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Toast.makeText(MainActivity.this, "No Barcode Scanned", Toast.LENGTH_LONG);
+            }
+        });
+    }
     private void initUI() {
         // init mVideoSurface
         mVideoSurface = (TextureView)findViewById(R.id.video_previewer_surface);
@@ -176,6 +219,7 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
             mCodecManager = new DJICodecManager(this, surface, width, height);
         }
     }
+
 
 
     @Override
