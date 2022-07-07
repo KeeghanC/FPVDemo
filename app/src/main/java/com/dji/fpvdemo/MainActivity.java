@@ -18,6 +18,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
@@ -47,7 +48,8 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
     private Button mCaptureBtn, mShootPhotoModeBtn, mRecordVideoModeBtn;
     private ToggleButton mRecordBtn;
     private TextView recordingTime;
-
+    long fclick = 0;
+    long sclick;
     private Handler handler;
 
     @Override
@@ -101,29 +103,40 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
      */
     @Override
     public void onSurfaceTextureUpdated(SurfaceTexture surface) {
-        mCaptureBtn.setText("Keeghan");
+
+//        mCaptureBtn.setText("Keeghan");
 
         Bitmap videoCaptureBitmap = mVideoSurface.getBitmap(); //get bitmap to look for barcode
 
-        BarcodeScanner barcodeScanner = BarcodeScanning.getClient(new BarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS).build());
+        BarcodeScanner barcodeScanner = BarcodeScanning.getClient(new BarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_CODE_128).build());
         InputImage image = InputImage.fromBitmap(videoCaptureBitmap, 0); //image to query for barcode
 
-        //Task to process the image to look for a barcode
+//        Task to process the image to look for a barcode
         Task<List<Barcode>> task = barcodeScanner.process(image);
         task.addOnSuccessListener(new OnSuccessListener<List<Barcode>>() {
             @Override
             public void onSuccess(List<Barcode> barcodes) {
                 for (int i = 0; i < barcodes.size(); i++){
+                    if (mCaptureBtn.getText() == "CAPTURE"){
+                        mCaptureBtn.setText(barcodes.get(i).getRawValue());
+                    }
                     String stringBarcode = barcodes.get(i).getRawValue();
                     mCaptureBtn.setText(stringBarcode);
+                    fclick = System.currentTimeMillis()/1000;
                     Toast.makeText(MainActivity.this, stringBarcode, Toast.LENGTH_SHORT).show();
-                    SystemClock.sleep(1000);
                 }
             }
-        }).addOnFailureListener(new OnFailureListener() {
+        })
+        .addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
-                Toast.makeText(MainActivity.this, "No Barcode Scanned", Toast.LENGTH_LONG);
+//                Toast.makeText(MainActivity.this, "No Barcode Scanned", Toast.LENGTH_LONG);
+            }
+        })
+        .addOnCompleteListener(new OnCompleteListener<List<Barcode>>() {
+            @Override
+            public void onComplete(@NonNull Task<List<Barcode>> task) {
+                return;
             }
         });
     }
@@ -156,17 +169,50 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
         });
     }
 
+    private void clickCapture(View view){
+        int seconds = -1;
+        Toast.makeText(this, "Record Presssed with " + seconds + "since last press", Toast.LENGTH_SHORT).show();
+    }
+
     @Override
     public void onClick(View v) {
+        if (v.getId() == R.id.btn_capture){
+            mCaptureBtn.setText("40");
+        }
         switch (v.getId()) {
             case R.id.btn_capture:{
-                break;
+                Bitmap videoCaptureBitmap = mVideoSurface.getBitmap();
+                BarcodeScanner barcodeScanner = BarcodeScanning.getClient(new BarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS).build());
+                InputImage image = InputImage.fromBitmap(videoCaptureBitmap, 0); //image to query for barcode
+
+//                Task to process the image to look for a barcode
+                Task<List<Barcode>> task = barcodeScanner.process(image);
+                task.addOnSuccessListener(new OnSuccessListener<List<Barcode>>() {
+                    @Override
+                    public void onSuccess(List<Barcode> barcodes) {
+                        for (int i = 0; i < barcodes.size(); i++){
+                            if (mCaptureBtn.getText() == "CAPTURE"){
+                                mCaptureBtn.setText(barcodes.get(i).getRawValue());
+                            }
+                            String stringBarcode = barcodes.get(i).getRawValue();
+                            mCaptureBtn.setText(stringBarcode);
+                            fclick = System.currentTimeMillis()/1000;
+                            Toast.makeText(MainActivity.this, stringBarcode, Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+        //                Toast.makeText(MainActivity.this, "No Barcode Scanned", Toast.LENGTH_LONG);
+                    }
+                });
             }
             case R.id.btn_shoot_photo_mode:{
                 break;
             }
             case R.id.btn_record_video_mode:{
-                break;
+                int seconds = 2;
+                Toast.makeText(this, "Record Presssed with " + seconds + "since last press", Toast.LENGTH_SHORT).show();
             }
             default:
                 break;
